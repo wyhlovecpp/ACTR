@@ -22,9 +22,9 @@ class SPairDataset(CorrespondenceDataset):
 
         anntn_files = []
         for data_name in self.train_data:
-            anntn_files.append(glob.glob('%s/%s.json' % (self.ann_path, data_name))[0])
+            data_name = data_name.replace(':','_')
+            anntn_files.append(glob.glob((self.ann_path+'\\'+data_name+'.json').replace('\\','\\\\'))[0])
         anntn_files = list(map(lambda x: json.load(open(x)), anntn_files))
-
         self.src_kps = list(map(lambda x: torch.tensor(x['src_kps']).t().float(), anntn_files))
         self.trg_kps = list(map(lambda x: torch.tensor(x['trg_kps']).t().float(), anntn_files))
         self.src_bbox = list(map(lambda x: torch.tensor(x['src_bndbox']).float(), anntn_files))

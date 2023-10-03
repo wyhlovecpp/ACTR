@@ -35,7 +35,7 @@ if __name__ == "__main__":
                        help='path to pre-trained model')
     parser.add_argument('--batch-size', type=int, default=16,
                         help='training batch size')
-    parser.add_argument('--n_threads', type=int, default=32,
+    parser.add_argument('--n_threads', type=int, default=0,
                         help='number of parallel threads for dataloaders')
     parser.add_argument('--seed', type=int, default=2021,
                         help='Pseudo-RNG seed')
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     parser.add_argument('--benchmark', type=str, choices=['pfpascal', 'spair', 'pfwillow'])
     parser.add_argument('--thres', type=str, default='auto', choices=['auto', 'img', 'bbox'])
     parser.add_argument('--alpha', type=float, default=0.1)
-    parser.add_argument('--ibot_ckp_file', type=str, default='./')
+    parser.add_argument('--ibot_ckp_file', type=str, default='./checkpoint.pth')
 
     # Seed
     args = parser.parse_args()
@@ -80,7 +80,7 @@ if __name__ == "__main__":
         raise NotImplementedError()
     # create summary writer
 
-    model = nn.DataParallel(model)
+    # model = nn.DataParallel(model)
     model = model.to(device)
 
     train_started = time.time()

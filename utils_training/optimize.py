@@ -101,9 +101,11 @@ def test_epoch(net, val_loader, device, epoch):
         os.makedirs("./vis_test/")
 
     with torch.no_grad():
-        pbar = tqdm(enumerate(val_loader), total=len(val_loader))
+        # pbar = tqdm(enumerate(val_loader), total=len(val_loader))
+
         pck_array = []
-        for i, mini_batch in pbar:
+        for i, mini_batch in enumerate(val_loader):
+            print(i)
             flow_gt = mini_batch["flow_src"].to(device)
             ### To make sure the input size is 256x256
             source = F.interpolate(mini_batch["src_img"].to(device), 256, None, 'bilinear', False)
@@ -119,11 +121,49 @@ def test_epoch(net, val_loader, device, epoch):
             pck_array += eval_result["pck"]
 
             running_total_loss += Loss.item()
-            pbar.set_description(
-                " Test R_total_loss: %.3f/%.3f"
-                % (running_total_loss / (i + 1), Loss.item())
-            )
+            # pbar.set_description(
+            #     " Test R_total_loss: %.3f/%.3f"
+            #     % (running_total_loss / (i + 1), Loss.item())
+            # )
         mean_pck = sum(pck_array) / len(pck_array)
         print("####### Test mean pck: %.3f #######" % mean_pck)
 
     return running_total_loss / len(val_loader), mean_pck
+
+def test_epoch_1(net, source,target, device, epoch):
+    net.eval()
+    running_total_loss = 0
+
+    if not os.path.isdir("./vis_test/"):
+        os.makedirs("./vis_test/")
+
+    with torch.no_grad():
+        # pbar = tqdm(enumerate(val_loader), total=len(val_loader))
+        pck_array = []
+        ### To make sure the input size is 256x256
+        source = F.interpolate(source.to(device), 256, None, 'bilinear', False)
+        target = F.interpolate(target.to(device), 256, None, 'bilinear', False)
+        pred_flow = net(source, target)
+        _, _, h, w = pred_flow.size()
+        flow = F.interpolate(pred_flow, 512, mode='bilinear') * (512 / h)
+        tensor = torch.zeros(2,512*512)
+        for i in range(512):
+            for j in range(512):
+                tensor[0][i*512+j] = i
+                tensor[1][i*512+j] = j
+        tensor = tensor.cuda().type(torch.long)
+        kp = tensor + flow[0,:, tensor[1, :], tensor[0, :]]
+        # save kp
+        np.save("./vis_test/kp.npy", kp.cpu().numpy())
+
+
+    # return
+def estimate_transform(source_points, target_points):
+    # 将原图的坐标和目标图的坐标转换为齐次坐标
+    source_points = np.hstack((source_points, np.ones((len(source_points), 1))))
+    target_points = np.hstack((target_points, np.ones((len(target_points), 1))))
+
+    # 使用最小二乘法求解变换矩阵
+    transform_matrix, _ = np.linalg.lstsq(source_points, target_points, rcond=None)[:2]
+
+    return transform_matrix
